@@ -1,23 +1,24 @@
 from flask import Flask
-# import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 import time
 import threading
 import socket
 
 hostname=socket.gethostname()
-IPAddr=socket.gethostbyname(hostname)
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.connect(("8.8.8.8", 80))
+IPAddr = s.getsockname()[0]
 
-# GPIO.setmode(GPIO.BOARD)
+GPIO.setmode(GPIO.BOARD)
 
 resistorPin = 7
-
-mail = False
 
 app = Flask(__name__)
 
 @app.route('/')
 
 def index():
+    light = read_light()
     html = """
     <head>
         <title>Mail Detect</title>
@@ -53,31 +54,54 @@ def index():
     <center>
         <div class="title">Mail Detecting System <br><br> Running on: <b>"""+ hostname + """</b></div>
         """
-    if mail:
+    if light > 100:
         html += '<div class="box" style="border: 10px solid #98e5e5">Mail Detected ✉️'
     else:
         html += '<div class="box" style="border: 10px solid gray"> No Mail ❌'
     
     html += """
+
+    <pre> """ + str(light) + """ </pre>
+
         </div>
     </center>
+    <script>
+        setInterval(function() {
+            fetch('/api/v1/light')
+            .then(response => response.text())
+            .then(data => {
+                if (data > 100) {
+                    document.querySelector('.box').style.border = '10px solid #98e5e5';
+                    document.querySelector('.box').innerHTML = 'Mail Detected ✉️';
+                } else {
+                    document.querySelector('.box').style.border = '10px solid gray';
+                    document.querySelector('.box').innerHTML = 'No Mail ❌';
+                }
+            });
+        }, 2000);
+    </script>
     """
     return html
 
-# def read_light():
-#     time.sleep(1)
-#     GPIO.setup(resistorPin, GPIO.OUT) # Set the resistorPin to output mode so we can charge the capacitor
-#     GPIO.output(resistorPin, GPIO.LOW) # Set the resistorPin to low so we can charge the capacitor
-#     time.sleep(0.1)
+@app.route('/api/v1/light')
+def light():
+    return str(read_light())
+
+
+def read_light():
+    time.sleep(1)
+    GPIO.setup(resistorPin, GPIO.OUT) # Set the resistorPin to output mode so we can charge the capacitor
+    GPIO.output(resistorPin, GPIO.LOW) # Set the resistorPin to low so we can charge the capacitor
+    time.sleep(0.1)
     
-#     GPIO.setup(resistorPin, GPIO.IN) # Set the resistorPin to input mode so we can read the voltage
-#     currentTime = time.time() # Get the current time
-#     diff = 0
+    GPIO.setup(resistorPin, GPIO.IN) # Set the resistorPin to input mode so we can read the voltage
+    currentTime = time.time() # Get the current time
+    diff = 0
     
-#     while(GPIO.input(resistorPin) == GPIO.LOW): # While the voltage is low keep looping until the voltage is high
-#         diff  = time.time() - currentTime # Get the difference between the current time and the time when the voltage was low 
+    while(GPIO.input(resistorPin) == GPIO.LOW): # While the voltage is low keep looping until the voltage is high
+        diff  = time.time() - currentTime # Get the difference between the current time and the time when the voltage was low 
         
-#     return (diff * 1000) # Print the time it took to charge the capacitor in milliseconds(ms)
+    return (diff * 1000) # Print the time it took to charge the capacitor in milliseconds(ms)
 
 if __name__ == '__main__':
     app.run(host=IPAddr, debug=True)
