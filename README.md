@@ -1,6 +1,7 @@
 # Mail-Detect
 
-![maildetection](https://github.com/Arisamiga/Mail-Detect/assets/64918822/a79be60a-bda8-4833-8860-99fb1fe17af3)
+![maildetection](https://github.com/Arisamiga/Mail-Detect/assets/64918822/b368cc7b-7876-4677-be5a-fac5acdb7402)
+
 
 Code for running a Mail detector on the Raspberry Pi
 
